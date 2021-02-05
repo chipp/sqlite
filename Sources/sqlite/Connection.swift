@@ -2,11 +2,7 @@ import Foundation
 import SQLite3
 
 public final class Connection {
-    enum Error: Swift.Error {
-        case unableToOpenSQLiteDb(Int32)
-    }
-
-    public static func open(_ fileURL: URL) throws -> Connection {
+    public static func open(_ fileURL: URL) -> Result<Connection, SQLiteError> {
         var dbHandle: OpaquePointer?
         let result = fileURL.absoluteString.withCString { filename in
             withUnsafeMutablePointer(to: &dbHandle) { db in
@@ -14,10 +10,11 @@ public final class Connection {
             }
         }
 
-        if result == SQLITE_OK, let dbHandle = dbHandle {
-            return Connection.init(dbHandle: dbHandle)
-        } else {
-            throw Error.unableToOpenSQLiteDb(result)
+        switch (result, dbHandle) {
+        case (SQLITE_OK, let dbHandle?):
+            return .success(Connection(dbHandle: dbHandle))
+        case (let resultCode, _):
+            return .failure(SQLiteError(resultCode: resultCode, connection: dbHandle.map(Connection.init)))
         }
     }
 

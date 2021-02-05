@@ -7,7 +7,7 @@ final class sqliteTests: XCTestCase {
     var connection: Connection!
 
     override func setUpWithError() throws {
-        connection = try Connection.open(URL(string: ":memory:")!)
+        connection = try Connection.open(URL(string: ":memory:")!).get()
 
         try connection.prepare(sql: """
         CREATE TABLE users (

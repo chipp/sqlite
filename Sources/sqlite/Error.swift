@@ -1,19 +1,17 @@
 import Foundation
 import SQLite3
 
-public struct SQLiteError: Error {
-    let code: Code
+public enum SQLiteError: Swift.Error {
+    case sqlite(Code, message: String, description: String?)
 
-    let message: String
-    let description: String?
+    init(code: Code, connection: Connection?) {
+        let message = String(cString: sqlite3_errstr(code.resultCode))
+        let description = connection.map { String(cString: sqlite3_errmsg($0.dbHandle)) }
 
-    init(code: Code, connection: Connection) {
-        self.code = code
-        self.message = String(cString: sqlite3_errstr(code.resultCode))
-        self.description = String(cString: sqlite3_errmsg(connection.dbHandle))
+        self = .sqlite(code, message: message, description: description)
     }
 
-    init(resultCode: Int32, connection: Connection) {
+    init(resultCode: Int32, connection: Connection?) {
         self.init(code: Code(resultCode: resultCode), connection: connection)
     }
 }
