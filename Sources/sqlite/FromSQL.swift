@@ -40,3 +40,15 @@ extension Int8: FromSQL {
         Int8(sqlite3_value_int(value))
     }
 }
+
+extension UUID: FromSQL {
+    public static func decode(from value: OpaquePointer) -> UUID {
+        // TODO: check if text
+
+        // TODO: check number of bytes
+//        let bytesCount = sqlite3_value_bytes(value)
+        let uuid = sqlite3_value_blob(value).load(as: uuid_t.self)
+
+        return UUID(uuid: uuid)
+    }
+}

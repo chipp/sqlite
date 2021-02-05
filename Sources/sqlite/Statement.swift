@@ -8,7 +8,7 @@ public struct Statement {
     let raw: OpaquePointer
 
     @discardableResult
-    public func execute(params: [Param] = []) -> Result<Int, SQLiteError> {
+    public func execute(params: [ToSQL] = []) -> Result<Int, SQLiteError> {
         bindParameters(params).flatMap {
             step().flatMap { nextRowAvailable in
                 if !nextRowAvailable {
@@ -22,7 +22,7 @@ public struct Statement {
         }
     }
 
-    public func query(params: [Param] = []) -> Result<Rows, SQLiteError> {
+    public func query(params: [ToSQL] = []) -> Result<Rows, SQLiteError> {
         bindParameters(params).map {
             Rows(RowsIterator(statement: self))
         }
@@ -43,7 +43,7 @@ public struct Statement {
         sqlite3_column_value(raw, Int32(column))
     }
 
-    func bindParameters(_ params: [Param]) -> Result<(), SQLiteError> {
+    func bindParameters(_ params: [ToSQL]) -> Result<(), SQLiteError> {
         precondition(params.count == sqlite3_bind_parameter_count(raw))
 
         for (index, param) in params.enumerated() {
@@ -51,7 +51,7 @@ public struct Statement {
 
             let result: Int32
 
-            switch param {
+            switch param.sqliteInput {
             case .null:
                 result = sqlite3_bind_null(raw, index)
             case let .int(value):
@@ -80,44 +80,5 @@ public struct Statement {
         }
 
         return .success(())
-    }
-}
-
-public enum Param {
-    case null
-    case int(Int32)
-    case int64(Int)
-    case real(Double)
-    case text(String)
-    case blob(Data)
-}
-
-extension Param: ExpressibleByNilLiteral {
-    public init(nilLiteral: ()) {
-        self = .null
-    }
-}
-
-extension Param: ExpressibleByIntegerLiteral {
-    public init(integerLiteral value: IntegerLiteralType) {
-        self = .int64(value)
-    }
-}
-
-extension Param: ExpressibleByStringLiteral {
-    public init(stringLiteral value: StringLiteralType) {
-        self = .text(value)
-    }
-}
-
-extension Param: ExpressibleByFloatLiteral {
-    public init(floatLiteral value: FloatLiteralType) {
-        self = .real(value)
-    }
-}
-
-extension Param: ExpressibleByBooleanLiteral {
-    public init(booleanLiteral value: BooleanLiteralType) {
-        self = .int(value ? 1 : 0)
     }
 }

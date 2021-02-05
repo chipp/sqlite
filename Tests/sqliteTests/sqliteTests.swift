@@ -11,10 +11,10 @@ final class sqliteTests: XCTestCase {
 
         try connection.prepare(sql: """
         CREATE TABLE users (
-            id INTEGER PRIMARY KEY,
+            id BLOB PRIMARY KEY,
             name TEXT NOT NULL,
             username TEXT,
-            age INT NOT NULL
+            age INT
         )
         """).get().execute()
     }
@@ -26,7 +26,7 @@ final class sqliteTests: XCTestCase {
         expect(rows).to(haveCount(4))
 
         expect(try rows[0].get(1, type: String.self)) == "id"
-        expect(try rows[0].get(2, type: String.self)) == "INTEGER"
+        expect(try rows[0].get(2, type: String.self)) == "BLOB"
         expect(try rows[0].get(3, type: Bool.self)).to(beFalse())
         expect(try rows[0].get(5, type: Int.self)) == 1
 
@@ -42,7 +42,21 @@ final class sqliteTests: XCTestCase {
 
         expect(try rows[3].get(1, type: String.self)) == "age"
         expect(try rows[3].get(2, type: String.self)) == "INT"
-        expect(try rows[3].get(3, type: Bool.self)).to(beTrue())
+        expect(try rows[3].get(3, type: Bool.self)).to(beFalse())
         expect(try rows[3].get(5, type: Int.self)) == 0
+    }
+
+    func testUUIDConversion() throws {
+        let uuid = UUID(uuidString: "96253EE6-029E-4C14-B8C7-C7FC8209DCC0")!
+
+        try connection.prepare(sql: "INSERT INTO users (id, name) VALUES (?, ?)").get()
+            .execute(params: [uuid, "Vladimir Burdukov"])
+
+        let statement = try connection.prepare(sql: "SELECT id, name FROM users").get()
+        let rows = Array(try statement.query().get())
+
+        expect(rows).to(haveCount(1))
+        expect(try rows[0].get(0, type: UUID.self)) == uuid
+        expect(try rows[0].get(1, type: String.self)) == "Vladimir Burdukov"
     }
 }
