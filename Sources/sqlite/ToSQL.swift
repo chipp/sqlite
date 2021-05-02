@@ -59,3 +59,7 @@ extension UUID: ToSQL {
 extension String: ToSQL {
     public var sqliteInput: SQLiteInput { .text(self) }
 }
+
+extension RawRepresentable where Self: ToSQL, RawValue: ToSQL {
+    public var sqliteInput: SQLiteInput { rawValue.sqliteInput }
+}

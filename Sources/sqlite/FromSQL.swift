@@ -52,3 +52,9 @@ extension UUID: FromSQL {
         return UUID(uuid: uuid)
     }
 }
+
+extension RawRepresentable where Self: FromSQL, RawValue: FromSQL {
+    public static func decode(from value: OpaquePointer) -> Self {
+        self.init(rawValue: RawValue.decode(from: value))!
+    }
+}
