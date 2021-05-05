@@ -61,9 +61,7 @@ public struct Statement {
             case let .real(value):
                 result = sqlite3_bind_double(raw, index, value)
             case let .text(value):
-                result = value.utf8CString.withUnsafeBufferPointer { value in
-                    sqlite3_bind_text(raw, index, value.baseAddress, Int32(value.count), SQLITE_TRANSIENT)
-                }
+                result = sqlite3_bind_text(raw, index, value, -1, SQLITE_TRANSIENT)
             case let .blob(value):
                 if value.isEmpty {
                     result = sqlite3_bind_zeroblob(raw, index, 0)
