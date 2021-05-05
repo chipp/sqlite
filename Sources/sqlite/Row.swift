@@ -40,8 +40,7 @@ public final class Row {
 
     public func get<T: FromSQL>(_ column: Int) throws -> T {
         guard values.indices.contains(column) else {
-            // TODO: throw an error
-            preconditionFailure()
+            throw SQLiteError.noSuchColumn(column)
         }
 
         return T.decode(from: values[column])
@@ -49,8 +48,7 @@ public final class Row {
 
     public func get<T: FromSQL>(_ column: Int, type: T.Type) throws -> T {
         guard values.indices.contains(column) else {
-            // TODO: throw an error
-            preconditionFailure()
+            throw SQLiteError.noSuchColumn(column)
         }
 
         return T.decode(from: values[column])

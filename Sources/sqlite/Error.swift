@@ -3,6 +3,7 @@ import SQLite3
 
 public enum SQLiteError: Swift.Error {
     case sqlite(Code, message: String, description: String?)
+    case noSuchColumn(Int)
 
     init(code: Code, connection: Connection?) {
         let message = String(cString: sqlite3_errstr(code.resultCode))

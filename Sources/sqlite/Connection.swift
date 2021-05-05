@@ -27,7 +27,7 @@ public final class Connection {
         sqlite3_close(dbHandle)
     }
 
-    public func prepare(sql: String) throws -> Result<Statement, SQLiteError> {
+    public func prepare(sql: String) -> Result<Statement, SQLiteError> {
         sql.utf8CString.withUnsafeBufferPointer { sql -> Result<OpaquePointer, SQLiteError> in
             var stmt: OpaquePointer?
             let result = withUnsafeMutablePointer(to: &stmt) { stmt in
