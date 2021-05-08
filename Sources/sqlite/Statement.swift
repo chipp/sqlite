@@ -24,7 +24,7 @@ public struct Statement {
 
     public func query(params: [ToSQL] = []) -> Result<Rows, SQLiteError> {
         bindParameters(params).map {
-            Rows(RowsIterator(statement: self))
+            Rows(statement: self)
         }
     }
 

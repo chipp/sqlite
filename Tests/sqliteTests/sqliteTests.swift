@@ -20,6 +20,10 @@ final class sqliteTests: XCTestCase {
         """).get().execute()
     }
 
+    override func tearDown() {
+        connection = nil
+    }
+
     func testTableExists() throws {
         let statement = try connection.prepare(sql: "PRAGMA table_info(users)").get()
         let rows = Array(try statement.query().get())
@@ -50,6 +54,14 @@ final class sqliteTests: XCTestCase {
         expect(try rows[4].get(2, type: String.self)) == "TEXT"
         expect(try rows[4].get(3, type: Bool.self)).to(beTrue())
         expect(try rows[4].get(5, type: Int.self)) == 0
+    }
+
+    func testColumnsCountAndNames() throws {
+        let statement = try connection.prepare(sql: "SELECT * FROM users").get()
+        let rows = try statement.query().get()
+
+        expect(rows.columnsCount) == 5
+        expect(rows.columnNames) == ["id", "name", "username", "age", "sex"]
     }
 
     func testUUIDConversion() throws {

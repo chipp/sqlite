@@ -1,7 +1,29 @@
 import Foundation
 import SQLite3
 
-public typealias Rows = IteratorSequence<RowsIterator>
+public struct Rows: Sequence {
+    let statement: Statement
+
+    public var columnsCount: Int {
+        Int(sqlite3_column_count(statement.raw))
+    }
+
+    public var columnNames: [String] {
+        var names: [String] = []
+        names.reserveCapacity(columnsCount)
+
+        for index in 0 ..< columnsCount {
+            let name = String(cString: sqlite3_column_name(statement.raw, Int32(index)))
+            names.append(name)
+        }
+
+        return names
+    }
+
+    public func makeIterator() -> RowsIterator {
+        RowsIterator(statement: statement)
+    }
+}
 
 public struct RowsIterator: IteratorProtocol {
     let statement: Statement
