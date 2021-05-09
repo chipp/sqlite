@@ -14,9 +14,12 @@ let package = Package(
     products: [
         .library(name: "sqlite", targets: ["sqlite"])
     ],
-    dependencies: [.package(url: "https://github.com/Quick/Nimble", .upToNextMinor(from: "9.0.0"))],
+    dependencies: [
+        .package(url: "https://github.com/Quick/Nimble", .upToNextMinor(from: "9.0.0")),
+        .package(url: "https://github.com/krzysztofzablocki/Difference", .upToNextMinor(from: "0.6.0"))
+    ],
     targets: [
         .target(name: "sqlite"),
-        .testTarget(name: "sqliteTests", dependencies: ["sqlite", "Nimble"])
+        .testTarget(name: "sqliteTests", dependencies: ["sqlite", "Nimble", "Difference"])
     ]
 )

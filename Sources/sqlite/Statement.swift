@@ -28,6 +28,10 @@ public struct Statement {
         }
     }
 
+    public func reset() {
+        sqlite3_reset(raw)
+    }
+
     func step() -> Result<Bool, SQLiteError> {
         switch sqlite3_step(raw) {
         case SQLITE_ROW:

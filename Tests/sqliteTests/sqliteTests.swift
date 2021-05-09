@@ -1,7 +1,8 @@
 import XCTest
 import Nimble
+import Difference
 
-import sqlite
+@testable import sqlite
 
 final class sqliteTests: XCTestCase {
     var connection: Connection!
@@ -93,5 +94,60 @@ final class sqliteTests: XCTestCase {
 
         expect(rows).to(haveCount(1))
         expect(try rows[0].get(0, type: Sex.self)) == .male
+    }
+
+    func testStatementTable() throws {
+        let insert = try connection.prepare(sql: "INSERT INTO users (id, name, sex) VALUES (?, ?, ?)").get()
+
+        _ = try insert.execute(params: [Data([49]), "Vladimir Burdukov", "male"]).get()
+        _ = try insert.execute(params: [Data([50]), "Anna Burdukova", "female"]).get()
+        _ = try insert.execute(params: [Data([51]), "Vera Burdukova", "female"]).get()
+
+        let select = try connection.prepare(sql: "SELECT * FROM users").get()
+        let rows = try select.query().get()
+        let columns = rows.displayColumns()
+
+        expect(columns.map(\.name)) == ["id", "name", "username", "age", "sex"]
+        expect(columns.map(\.width)) == [2, 17, 8, 4, 6]
+        expect(columns.map(\.values)) == [
+            ["1", "2", "3"],
+            ["Vladimir Burdukov", "Anna Burdukova", "Vera Burdukova"],
+            ["NULL", "NULL", "NULL"],
+            ["NULL", "NULL", "NULL"],
+            ["male", "female", "female"]
+        ]
+
+        select.reset()
+
+        expect(rows.displayLines()).to(equalDiff([
+            "+----+-------------------+----------+------+--------+",
+            "| id | name              | username | age  | sex    |",
+            "+====+===================+==========+======+========+",
+            "| 1  | Vladimir Burdukov | NULL     | NULL | male   |",
+            "+----+-------------------+----------+------+--------+",
+            "| 2  | Anna Burdukova    | NULL     | NULL | female |",
+            "+----+-------------------+----------+------+--------+",
+            "| 3  | Vera Burdukova    | NULL     | NULL | female |",
+            "+----+-------------------+----------+------+--------+"
+        ]))
+    }
+}
+
+public func equalDiff<T: Equatable>(_ expectedValue: T?) -> Predicate<T> {
+    return Predicate.define { actualExpression in
+        let receivedValue = try actualExpression.evaluate()
+
+        if receivedValue == nil {
+            var message = ExpectationMessage.fail("")
+            if let expectedValue = expectedValue {
+                message = ExpectationMessage.expectedCustomValueTo("equal <\(expectedValue)>", actual: "nil")
+            }
+            return PredicateResult(status: .fail, message: message)
+        }
+        if expectedValue == nil {
+            return PredicateResult(status: .fail, message: ExpectationMessage.fail("").appendedBeNilHint())
+        }
+
+        return PredicateResult(bool: receivedValue == expectedValue, message: ExpectationMessage.fail("Found difference for " + diff(expectedValue, receivedValue).joined(separator: ", ")))
     }
 }
