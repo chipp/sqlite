@@ -2,15 +2,15 @@ import Foundation
 import SQLite3
 
 public final class Connection {
-    public static func open(_ fileURL: URL) -> Result<Connection, SQLiteError> {
+    public convenience init(_ fileURL: URL) throws {
         var dbHandle: OpaquePointer?
         let result = sqlite3_open(fileURL.absoluteString, &dbHandle)
 
         switch (result, dbHandle) {
         case (SQLITE_OK, let dbHandle?):
-            return .success(Connection(dbHandle: dbHandle))
+            self.init(dbHandle: dbHandle)
         case (let resultCode, _):
-            return .failure(SQLiteError(resultCode: resultCode, connection: dbHandle.map(Connection.init)))
+            throw SQLiteError(resultCode: resultCode, connection: dbHandle.map(Connection.init))
         }
     }
 
@@ -23,14 +23,14 @@ public final class Connection {
         sqlite3_close(dbHandle)
     }
 
-    public func prepare(sql: String) -> Result<Statement, SQLiteError> {
+    public func prepare(sql: String) throws -> Statement {
         var stmt: OpaquePointer?
         let result = sqlite3_prepare_v2(dbHandle, sql, -1, &stmt, nil)
 
         if result == SQLITE_OK, let stmt = stmt {
-            return .success(Statement(connection: self, raw: stmt))
+            return Statement(connection: self, raw: stmt)
         } else {
-            return .failure(SQLiteError(resultCode: result, connection: self))
+            throw SQLiteError(resultCode: result, connection: self)
         }
     }
 }

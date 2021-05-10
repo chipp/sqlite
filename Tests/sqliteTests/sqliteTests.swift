@@ -8,7 +8,7 @@ final class sqliteTests: XCTestCase {
     var connection: Connection!
 
     override func setUpWithError() throws {
-        connection = try Connection.open(URL(string: ":memory:")!).get()
+        connection = try Connection(URL(string: ":memory:")!)
 
         try connection.prepare(sql: """
         CREATE TABLE users (
@@ -18,7 +18,7 @@ final class sqliteTests: XCTestCase {
             age INT,
             sex TEXT NOT NULL
         )
-        """).get().execute()
+        """).execute()
     }
 
     override func tearDown() {
@@ -26,8 +26,8 @@ final class sqliteTests: XCTestCase {
     }
 
     func testTableExists() throws {
-        let statement = try connection.prepare(sql: "PRAGMA table_info(users)").get()
-        let rows = Array(try statement.query().get())
+        let statement = try connection.prepare(sql: "PRAGMA table_info(users)")
+        let rows = Array(try statement.query())
 
         expect(rows).to(haveCount(5))
 
@@ -58,8 +58,8 @@ final class sqliteTests: XCTestCase {
     }
 
     func testColumnsCountAndNames() throws {
-        let statement = try connection.prepare(sql: "SELECT * FROM users").get()
-        let rows = try statement.query().get()
+        let statement = try connection.prepare(sql: "SELECT * FROM users")
+        let rows = try statement.query()
 
         expect(rows.columnsCount) == 5
         expect(rows.columnNames) == ["id", "name", "username", "age", "sex"]
@@ -68,11 +68,11 @@ final class sqliteTests: XCTestCase {
     func testUUIDConversion() throws {
         let uuid = UUID(uuidString: "96253EE6-029E-4C14-B8C7-C7FC8209DCC0")!
 
-        try connection.prepare(sql: "INSERT INTO users (id, name, sex) VALUES (?, ?, ?)").get()
+        try connection.prepare(sql: "INSERT INTO users (id, name, sex) VALUES (?, ?, ?)")
             .execute(params: [uuid, "Vladimir Burdukov", "male"])
 
-        let statement = try connection.prepare(sql: "SELECT id, name FROM users").get()
-        let rows = Array(try statement.query().get())
+        let statement = try connection.prepare(sql: "SELECT id, name FROM users")
+        let rows = Array(try statement.query())
 
         expect(rows).to(haveCount(1))
         expect(try rows[0].get(0, type: UUID.self)) == uuid
@@ -86,25 +86,25 @@ final class sqliteTests: XCTestCase {
 
         let uuid = UUID(uuidString: "96253EE6-029E-4C14-B8C7-C7FC8209DCC0")!
 
-        try connection.prepare(sql: "INSERT INTO users (id, name, sex) VALUES (?, ?, ?)").get()
+        try connection.prepare(sql: "INSERT INTO users (id, name, sex) VALUES (?, ?, ?)")
             .execute(params: [uuid, "Vladimir Burdukov", Sex.male])
 
-        let statement = try connection.prepare(sql: "SELECT sex FROM users").get()
-        let rows = Array(try statement.query().get())
+        let statement = try connection.prepare(sql: "SELECT sex FROM users")
+        let rows = Array(try statement.query())
 
         expect(rows).to(haveCount(1))
         expect(try rows[0].get(0, type: Sex.self)) == .male
     }
 
     func testStatementTable() throws {
-        let insert = try connection.prepare(sql: "INSERT INTO users (id, name, sex) VALUES (?, ?, ?)").get()
+        let insert = try connection.prepare(sql: "INSERT INTO users (id, name, sex) VALUES (?, ?, ?)")
 
-        _ = try insert.execute(params: [Data([49]), "Vladimir Burdukov", "male"]).get()
-        _ = try insert.execute(params: [Data([50]), "Anna Burdukova", "female"]).get()
-        _ = try insert.execute(params: [Data([51]), "Vera Burdukova", "female"]).get()
+        try insert.execute(params: [Data([49]), "Vladimir Burdukov", "male"])
+        try insert.execute(params: [Data([50]), "Anna Burdukova", "female"])
+        try insert.execute(params: [Data([51]), "Vera Burdukova", "female"])
 
-        let select = try connection.prepare(sql: "SELECT * FROM users").get()
-        let rows = try select.query().get()
+        let select = try connection.prepare(sql: "SELECT * FROM users")
+        let rows = try select.query()
         let columns = rows.displayColumns()
 
         expect(columns.map(\.name)) == ["id", "name", "username", "age", "sex"]

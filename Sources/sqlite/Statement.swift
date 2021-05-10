@@ -8,38 +8,36 @@ public struct Statement {
     let raw: OpaquePointer
 
     @discardableResult
-    public func execute(params: [ToSQL] = []) -> Result<Int, SQLiteError> {
-        bindParameters(params).flatMap {
-            step().flatMap { nextRowAvailable in
-                if !nextRowAvailable {
-                    sqlite3_reset(raw)
-                    return .success(Int(sqlite3_changes(connection.dbHandle)))
-                } else {
-                    // TODO:
-                    fatalError()
-                }
-            }
+    public func execute(params: [ToSQL] = []) throws -> Int {
+        try bindParameters(params)
+        let nextRowAvailable = try step()
+
+        if !nextRowAvailable {
+            sqlite3_reset(raw)
+            return Int(sqlite3_changes(connection.dbHandle))
+        } else {
+            // TODO:
+            fatalError()
         }
     }
 
-    public func query(params: [ToSQL] = []) -> Result<Rows, SQLiteError> {
-        bindParameters(params).map {
-            Rows(statement: self)
-        }
+    public func query(params: [ToSQL] = []) throws -> Rows {
+        try bindParameters(params)
+        return Rows(statement: self)
     }
 
     public func reset() {
         sqlite3_reset(raw)
     }
 
-    func step() -> Result<Bool, SQLiteError> {
+    func step() throws -> Bool {
         switch sqlite3_step(raw) {
         case SQLITE_ROW:
-            return .success(true)
+            return true
         case SQLITE_DONE:
-            return .success(false)
+            return false
         case let result:
-            return .failure(SQLiteError(resultCode: result, connection: connection))
+            throw SQLiteError(resultCode: result, connection: connection)
         }
     }
 
@@ -47,7 +45,7 @@ public struct Statement {
         sqlite3_column_value(raw, Int32(column))
     }
 
-    func bindParameters(_ params: [ToSQL]) -> Result<(), SQLiteError> {
+    func bindParameters(_ params: [ToSQL]) throws {
         precondition(params.count == sqlite3_bind_parameter_count(raw))
 
         for (index, param) in params.enumerated() {
@@ -55,12 +53,10 @@ public struct Statement {
 
             let result: Int32
 
-            switch param.sqliteInput {
+            switch param.encode {
             case .null:
                 result = sqlite3_bind_null(raw, index)
             case let .int(value):
-                result = sqlite3_bind_int(raw, index, value)
-            case let .int64(value):
                 result = sqlite3_bind_int64(raw, index, Int64(value))
             case let .real(value):
                 result = sqlite3_bind_double(raw, index, value)
@@ -77,10 +73,8 @@ public struct Statement {
             }
 
             if result != SQLITE_OK {
-                return .failure(SQLiteError(resultCode: result, connection: connection))
+                throw SQLiteError(resultCode: result, connection: connection)
             }
         }
-
-        return .success(())
     }
 }

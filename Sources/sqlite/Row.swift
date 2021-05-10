@@ -31,11 +31,11 @@ public struct RowsIterator: IteratorProtocol {
     public typealias Element = Row
 
     public func next() -> Element? {
-        if case .success(true) = statement.step() {
-            return Row(statement: statement)
-        } else {
+        guard let success = try? statement.step() else {
             return nil
         }
+
+        return success ? Row(statement: statement) : nil
     }
 }
 
