@@ -5,6 +5,33 @@ public protocol FromSQL {
     static func decode(from value: OpaquePointer) -> Self
 }
 
+extension SQLiteValue: FromSQL {
+    private enum ValueType: Int32 {
+        case integer = 1
+        case float
+        case text
+        case blob
+        case null
+    }
+
+    public static func decode(from value: OpaquePointer) -> SQLiteValue {
+        let type = ValueType(rawValue: sqlite3_value_type(value))!
+        switch type {
+        case .integer:
+            return .int(.decode(from: value))
+        case .float:
+            return .real(.decode(from: value))
+        case .text:
+            return .text(.decode(from: value))
+        case .blob:
+            let bytesCount = Int(sqlite3_value_bytes(value))
+            return .blob(Data(bytes: sqlite3_value_blob(value), count: bytesCount))
+        case .null:
+            return .null
+        }
+    }
+}
+
 extension String: FromSQL {
     public static func decode(from value: OpaquePointer) -> String {
         String(cString: sqlite3_value_text(value))
@@ -38,6 +65,12 @@ extension Int: FromSQL {
 extension Int8: FromSQL {
     public static func decode(from value: OpaquePointer) -> Int8 {
         Int8(sqlite3_value_int(value))
+    }
+}
+
+extension Double: FromSQL {
+    public static func decode(from value: OpaquePointer) -> Double {
+        sqlite3_value_double(value)
     }
 }
 

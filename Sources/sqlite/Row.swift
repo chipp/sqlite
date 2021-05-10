@@ -75,4 +75,12 @@ public final class Row {
 
         return T.decode(from: values[column])
     }
+
+    public func getValue(_ column: Int) throws -> SQLiteValue {
+        guard values.indices.contains(column) else {
+            throw SQLiteError.noSuchColumn(column)
+        }
+
+        return .decode(from: values[column])
+    }
 }

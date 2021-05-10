@@ -131,6 +131,33 @@ final class sqliteTests: XCTestCase {
             "+----+-------------------+----------+------+--------+"
         ]))
     }
+
+    func testSQLiteValueDecoding() throws {
+        try connection.prepare(sql: """
+        CREATE TABLE types (
+            id INT PRIMARY KEY,
+            height REAL NOT NULL,
+            username TEXT,
+            blob BLOB
+        )
+        """).execute()
+
+        let insert = try connection.prepare(sql: "INSERT INTO types (id, height, username, blob) VALUES (?, ?, ?, ?)")
+        try insert.execute(params: [1, 1.2, "chipp", Data([1])])
+        try insert.execute(params: [2, 2.2, Optional<String>.none, Optional<Data>.none])
+
+        let rows = Array(try connection.prepare(sql: "SELECT * FROM types").query())
+
+        expect(try rows[0].getValue(0)) == .int(1)
+        expect(try rows[0].getValue(1)) == .real(1.2)
+        expect(try rows[0].getValue(2)) == .text("chipp")
+        expect(try rows[0].getValue(3)) == .blob(Data([1]))
+
+        expect(try rows[1].getValue(0)) == .int(2)
+        expect(try rows[1].getValue(1)) == .real(2.2)
+        expect(try rows[1].getValue(2)) == .null
+        expect(try rows[1].getValue(3)) == .null
+    }
 }
 
 public func equalDiff<T: Equatable>(_ expectedValue: T?) -> Predicate<T> {
