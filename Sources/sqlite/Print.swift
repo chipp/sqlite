@@ -65,7 +65,18 @@ extension Rows: CustomStringConvertible {
 
         for row in self {
             for index in 0 ..< count {
-                table[index].append(try! row.get(index, type: Optional<String>.self) ?? "NULL")
+                switch try! row.getValue(index) {
+                case .null:
+                    table[index].append("NULL")
+                case let .int(value):
+                    table[index].append("\(value)")
+                case let .real(value):
+                    table[index].append("\(value)")
+                case let .text(value):
+                    table[index].append(value)
+                case let .blob(value):
+                    table[index].append("BLOB(\(value.count))")
+                }
             }
         }
 

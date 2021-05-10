@@ -25,7 +25,11 @@ extension SQLiteValue: FromSQL {
             return .text(.decode(from: value))
         case .blob:
             let bytesCount = Int(sqlite3_value_bytes(value))
-            return .blob(Data(bytes: sqlite3_value_blob(value), count: bytesCount))
+            if bytesCount == 0 {
+                return .blob(Data())
+            } else {
+                return .blob(Data(bytes: sqlite3_value_blob(value), count: bytesCount))
+            }
         case .null:
             return .null
         }

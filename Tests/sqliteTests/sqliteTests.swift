@@ -97,38 +97,38 @@ final class sqliteTests: XCTestCase {
     }
 
     func testStatementTable() throws {
-        let insert = try connection.prepare(sql: "INSERT INTO users (id, name, sex) VALUES (?, ?, ?)")
+        let insert = try connection.prepare(sql: "INSERT INTO users (id, name, age, sex) VALUES (?, ?, ?, ?)")
 
-        try insert.execute(params: [Data([49]), "Vladimir Burdukov", "male"])
-        try insert.execute(params: [Data([50]), "Anna Burdukova", "female"])
-        try insert.execute(params: [Data([51]), "Vera Burdukova", "female"])
+        try insert.execute(params: [Data([49]), "Vasya", 11, "male"])
+        try insert.execute(params: [Data([50]), "Petya", 12, "female"])
+        try insert.execute(params: [Data(), "Burdukov", Int?.none, "female"])
 
         let select = try connection.prepare(sql: "SELECT * FROM users")
         let rows = try select.query()
         let columns = rows.displayColumns()
 
         expect(columns.map(\.name)) == ["id", "name", "username", "age", "sex"]
-        expect(columns.map(\.width)) == [2, 17, 8, 4, 6]
+        expect(columns.map(\.width)) == [7, 8, 8, 4, 6]
         expect(columns.map(\.values)) == [
-            ["1", "2", "3"],
-            ["Vladimir Burdukov", "Anna Burdukova", "Vera Burdukova"],
+            ["BLOB(1)", "BLOB(1)", "BLOB(0)"],
+            ["Vasya", "Petya", "Burdukov"],
             ["NULL", "NULL", "NULL"],
-            ["NULL", "NULL", "NULL"],
-            ["male", "female", "female"]
+            ["11", "12", "NULL"],
+            ["male", "female", "female"],
         ]
 
         select.reset()
 
         expect(rows.displayLines()).to(equalDiff([
-            "+----+-------------------+----------+------+--------+",
-            "| id | name              | username | age  | sex    |",
-            "+====+===================+==========+======+========+",
-            "| 1  | Vladimir Burdukov | NULL     | NULL | male   |",
-            "+----+-------------------+----------+------+--------+",
-            "| 2  | Anna Burdukova    | NULL     | NULL | female |",
-            "+----+-------------------+----------+------+--------+",
-            "| 3  | Vera Burdukova    | NULL     | NULL | female |",
-            "+----+-------------------+----------+------+--------+"
+            "+---------+----------+----------+------+--------+",
+            "| id      | name     | username | age  | sex    |",
+            "+=========+==========+==========+======+========+",
+            "| BLOB(1) | Vasya    | NULL     | 11   | male   |",
+            "+---------+----------+----------+------+--------+",
+            "| BLOB(1) | Petya    | NULL     | 12   | female |",
+            "+---------+----------+----------+------+--------+",
+            "| BLOB(0) | Burdukov | NULL     | NULL | female |",
+            "+---------+----------+----------+------+--------+"
         ]))
     }
 
@@ -144,7 +144,7 @@ final class sqliteTests: XCTestCase {
 
         let insert = try connection.prepare(sql: "INSERT INTO types (id, height, username, blob) VALUES (?, ?, ?, ?)")
         try insert.execute(params: [1, 1.2, "chipp", Data([1])])
-        try insert.execute(params: [2, 2.2, Optional<String>.none, Optional<Data>.none])
+        try insert.execute(params: [2, 2.2, String?.none, Data?.none])
 
         let rows = Array(try connection.prepare(sql: "SELECT * FROM types").query())
 
