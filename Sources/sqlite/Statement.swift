@@ -3,9 +3,18 @@ import SQLite3
 
 let SQLITE_TRANSIENT = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
 
-public struct Statement {
+public class Statement {
     let connection: Connection
     let raw: OpaquePointer
+
+    init(connection: Connection, raw: OpaquePointer) {
+        self.connection = connection
+        self.raw = raw
+    }
+
+    deinit {
+        sqlite3_finalize(raw)
+    }
 
     @discardableResult
     public func execute(params: [ToSQL] = []) throws -> Int {
